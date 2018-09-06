@@ -1,27 +1,26 @@
-### This is a fork of Can Zhang's PyTorch implementation for the [paper](https://arxiv.org/pdf/1804.09066.pdf). " ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018."  
+#### This is a fork of [Can Zhang](https://github.com/zhang-can/ECO-pytorch)'s PyTorch implementation for the [paper](https://arxiv.org/pdf/1804.09066.pdf). " ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018."  
  By Mohammadreza Zolfaghari, Kamaljeet Singh, Thomas Brox
  
  
-#### NOTE
-* **Trained models on Kinetics dataset for ECO Lite and C3D can be downloaded. But these are not final models. 
+##### NOTE
+* Trained models on Kinetics dataset for ECO Lite and C3D can be downloaded. But these are not final models. 
 * **Keep watching for updates**
 
 * Pre-trained model for 2D-Net is provided by [tsn-pytorch](https://github.com/yjxiong/tsn-pytorch), and 3D-Net use the Kinetics-pretrained model of 3D-Resnet18 provided by [3D-ResNets-PyTorch](https://github.com/kenshohara/3D-ResNets-PyTorch).
-* Codes modified from [tsn-pytorch](https://github.com/yjxiong/tsn-pytorch).
 
 
-## Environment:
+### Environment:
 * Python 3.5.2
 * PyTorch 0.4.1
 * TorchVison: 0.2.1
 
-## Clone this repo
+### Clone this repo
 
 ```
 git clone https://github.com/mzolfaghari/ECO-pytorch
 ```
 
-## Generate dataset lists
+### Generate dataset lists
 
 ```bash
 python gen_dataset_lists.py <ucf101/something> <dataset_frames_root_path>
@@ -31,7 +30,7 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
 > The dataset should be organized as:<br>
 > <dataset_frames_root_path>/<video_name>/<frame_images>
 
-## Training
+### Training
 1. Download the initialization and trained models:
 
 	```Shell
@@ -51,19 +50,19 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
     ./scripts/run_c3dres_kinetics.sh local
 ```
 
-## NOTE
+### NOTE
 * If you want to train your model from scratch change the config as following:
 ```bash
     --pretrained_parts scratch
 ```
 * configurations explained in "opts.py"
 
-### TODO
+#### TODO
 1. ECO Full
 2. Trained models on other datasets
 
 
-### Citation
+#### Citation
 If you use this code or ideas from the paper for your research, please cite our paper:
 ```
 @inproceedings{ECO_eccv18,
@@ -76,7 +75,7 @@ year={2018}
 }
 ```
 
-### Contact
+#### Contact
 
   [Mohammadreza Zolfaghari](https://github.com/mzolfaghari/ECO-pytorch), [Can Zhang](https://github.com/zhang-can/ECO-pytorch)
 
