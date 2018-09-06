@@ -3,7 +3,7 @@
  
  
 ##### NOTE
-* Trained models on Kinetics dataset for ECO Lite and C3D can be downloaded. But these are not final models. 
+* Trained models on Kinetics dataset for ECO Lite and C3D are provided but they are not final models. 
 * **Keep watching for updates**
 
 * Pre-trained model for 2D-Net is provided by [tsn-pytorch](https://github.com/yjxiong/tsn-pytorch), and 3D-Net use the Kinetics-pretrained model of 3D-Resnet18 provided by [3D-ResNets-PyTorch](https://github.com/kenshohara/3D-ResNets-PyTorch).
