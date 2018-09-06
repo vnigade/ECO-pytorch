@@ -14,8 +14,6 @@ def get_basic_layer(info, channels=None, conv_bias=False, num_segments=4):
     id = info['id']
 
     attr = info['attrs'] if 'attrs' in info else list()
-    if id=="global_pool":
-        attr['kernel_d'] = int(num_segments / 4)
 
     out, op, in_vars = parse_expr(info['expr'])
     assert(len(out) == 1)

@@ -2,7 +2,7 @@ from torch import nn
 
 from ops.basic_ops import ConsensusModule, Identity
 from transforms import *
-from torch.nn.init import normal, constant
+from torch.nn.init import xavier_uniform_, constant_
 
 class TSN(nn.Module):
     def __init__(self, num_class, num_segments, pretrained_parts, modality,
@@ -86,11 +86,11 @@ TSN Configurations:
 
         std = 0.001
         if self.new_fc is None:
-            normal(getattr(self.base_model, self.base_model.last_layer_name).weight, 0, std)
-            constant(getattr(self.base_model, self.base_model.last_layer_name).bias, 0)
+            xavier_uniform_(getattr(self.base_model, self.base_model.last_layer_name).weight)
+            constant_(getattr(self.base_model, self.base_model.last_layer_name).bias, 0)
         else:
-            normal(self.new_fc.weight, 0, std)
-            constant(self.new_fc.bias, 0)
+            xavier_uniform_(self.new_fc.weight)
+            constant_(self.new_fc.bias, 0)
         return feature_dim
 
     def _prepare_base_model(self, base_model):
@@ -108,11 +108,11 @@ TSN Configurations:
             elif self.modality == 'RGBDiff':
                 self.input_mean = [0.485, 0.456, 0.406] + [0] * 3 * self.new_length
                 self.input_std = self.input_std + [np.mean(self.input_std) * 2] * 3 * self.new_length
-        elif base_model == 'BNInception':
+        elif base_model == 'C3DRes18':
             import tf_model_zoo
-            self.base_model = getattr(tf_model_zoo, base_model)()
-            self.base_model.last_layer_name = 'fc'
-            self.input_size = 224
+            self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments, pretrained_parts=self.pretrained_parts)
+            self.base_model.last_layer_name = 'fc8'
+            self.input_size = 112
             self.input_mean = [104, 117, 128]
             self.input_std = [1]
 
@@ -318,7 +318,12 @@ TSN Configurations:
         # input.size(): [32, 9, 224, 224]
         # after view() func: [96, 3, 224, 224]
         # print(input.view((-1, sample_len) + input.size()[-2:]).size())
-        base_out = self.base_model(input.view((-1, sample_len) + input.size()[-2:]))
+        if self.base_model_name == "C3DRes18":
+            before_permute = input.view((-1, sample_len) + input.size()[-2:])
+            input_var = torch.transpose(before_permute.view((-1, self.num_segments) + before_permute.size()[1:]), 1, 2)
+        else:
+            input_var = input.view((-1, sample_len) + input.size()[-2:])
+        base_out = self.base_model(input_var)
 
         # zc comments
         if self.dropout > 0:
@@ -330,7 +335,7 @@ TSN Configurations:
         
         if self.reshape:
           
-            if self.base_model_name == 'BN2to1D':
+            if self.base_model_name == 'C3DRes18':
                 output = base_out
                 output = self.consensus(base_out)
                 return output

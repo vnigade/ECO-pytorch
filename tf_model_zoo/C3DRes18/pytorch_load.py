@@ -6,11 +6,10 @@ import yaml
 from torch.nn.init import constant_, xavier_uniform_
 
 
-class ECO(nn.Module):
-    def __init__(self, model_path='tf_model_zoo/ECO/ECO.yaml', num_classes=101,
-                       weight_url_2d='http://pa0630vji.bkt.gdipper.com/zhangcan/pth/models/bninception_rgb_kinetics_init-d4ee618d3399.pth',
+class C3DRes18(nn.Module):
+    def __init__(self, model_path='tf_model_zoo/C3DRes18/C3DRes18.yaml', num_classes=101,
                        num_segments=4, pretrained_parts='both'):
-        super(ECO, self).__init__()
+        super(C3DRes18, self).__init__()
 
         self.num_segments = num_segments
 
@@ -46,39 +45,13 @@ class ECO(nn.Module):
         print("pretrained_parts: ", pretrained_parts)
 
         if pretrained_parts == "scratch":
-            
             new_state_dict = {}
-        
-        elif pretrained_parts == "2D":
-            
-            pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
-            new_state_dict = {k: v for k, v in pretrained_dict_2d['state_dict'].items() if k in model_dict}
-        
         elif pretrained_parts == "3D":
-            
-            pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
-            new_state_dict = {k[18:]: v for k, v in pretrained_dict_3d['state_dict'].items() if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size())}
-        
-        elif pretrained_parts == "both":
-            
-            pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
-            new_state_dict = {k: v for k, v in pretrained_dict_2d['state_dict'].items() if k in model_dict}
-            pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
-            for k, v in pretrained_dict_3d['state_dict'].items():
-                if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size()):
-                    new_state_dict[k[18:]] = v
-
-        elif pretrained_parts == "finetune":
-            pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v1.pth.tar")
+            pretrained_dict = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
             new_state_dict = {k[18:]: v for k, v in pretrained_dict['state_dict'].items() if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size())}
-            print("*"*50)
-            print("Start finetuning ..")
         else:
-            raise ValueError('For C3Dresnet, "--pretrained_parts" can only be chosen from [scratch, 2D, 3D]')
-
-
-
-
+            raise ValueError('For C3DRes18, "--pretrained_parts" can only be chosen from [scratch, 3D]')
+        
         # init the layer names which is not in pretrained model dict
         un_init_dict_keys = [k for k in model_dict.keys() if k not in new_state_dict]
         print("un_init_dict_keys: ", un_init_dict_keys)
@@ -119,7 +92,7 @@ class ECO(nn.Module):
         for op in self._op_list:
             if op[1] != 'Concat' and op[1] != 'InnerProduct' and op[1] != 'Eltwise':
                 # first 3d conv layer judge, the last 2d conv layer's output must be transpose from 4d to 5d
-                if op[0] == 'res3a_2':
+                if op[0] == 'adasa':
                     inception_3c_output = data_dict['inception_3c_double_3x3_1_bn']
                     inception_3c_transpose_output = torch.transpose(inception_3c_output.view((-1, self.num_segments) + inception_3c_output.size()[1:]), 1, 2)
                     data_dict[op[2]] = getattr(self, op[0])(inception_3c_transpose_output)

@@ -7,12 +7,13 @@ import torchvision
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 
 from dataset import TSNDataSet
 from models import TSN
 from transforms import *
 from opts import parser
+import sys
 
 best_prec1 = 0
 
@@ -21,14 +22,30 @@ def main():
     global args, best_prec1
     args = parser.parse_args()
 
+    print("------------------------------------")
+    print("Environment Versions:")
+    print("- Python: {}".format(sys.version))
+    print("- PyTorch: {}".format(torch.__version__))
+    print("- TorchVison: {}".format(torchvision.__version__))
+
+    args_dict = args.__dict__
+    print("------------------------------------")
+    print(args.arch+" Configurations:")
+    for key in args_dict.keys():
+        print("- {}: {}".format(key, args_dict[key]))
+    print("------------------------------------")
+
     if args.dataset == 'ucf101':
         num_class = 101
+        rgb_read_format = "{:05d}.jpg"
     elif args.dataset == 'hmdb51':
         num_class = 51
     elif args.dataset == 'kinetics':
         num_class = 400
+        rgb_read_format = "{:04d}.jpg"
     elif args.dataset == 'something':
         num_class = 174
+        rgb_read_format = "{:04d}.jpg"
     else:
         raise ValueError('Unknown dataset '+args.dataset)
 
@@ -85,11 +102,11 @@ def main():
         TSNDataSet("", args.train_list, num_segments=args.num_segments,
                    new_length=data_length,
                    modality=args.modality,
-                   image_tmpl=args.rgb_prefix+"{:05d}.jpg" if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+"{}_{:05d}.jpg",
+                   image_tmpl=args.rgb_prefix+rgb_read_format if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+rgb_read_format,
                    transform=torchvision.transforms.Compose([
                        train_augmentation,
-                       Stack(roll=(args.arch == 'BNInception') or (args.arch == 'ECO')),
-                       ToTorchFormatTensor(div=(args.arch != 'BNInception') and (args.arch != 'ECO')),
+                       Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO')),
+                       ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO')),
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=True,
@@ -99,13 +116,13 @@ def main():
         TSNDataSet("", args.val_list, num_segments=args.num_segments,
                    new_length=data_length,
                    modality=args.modality,
-                   image_tmpl=args.rgb_prefix+"{:05d}.jpg" if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+"{}_{:05d}.jpg",
+                   image_tmpl=args.rgb_prefix+rgb_read_format if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+rgb_read_format,
                    random_shift=False,
                    transform=torchvision.transforms.Compose([
                        GroupScale(int(scale_size)),
                        GroupCenterCrop(crop_size),
-                       Stack(roll=(args.arch == 'BNInception') or (args.arch == 'ECO')),
-                       ToTorchFormatTensor(div=(args.arch != 'BNInception') and (args.arch != 'ECO')),
+                       Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO')),
+                       ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO')),
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=False,
@@ -124,7 +141,7 @@ def main():
     optimizer = torch.optim.SGD(policies,
                                 args.lr,
                                 momentum=args.momentum,
-                                weight_decay=args.weight_decay)
+                                weight_decay=args.weight_decay,nesterov=args.nesterov)
 
     if args.evaluate:
         validate(val_loader, model, criterion, 0)
@@ -158,6 +175,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
     top1 = AverageMeter()
     top5 = AverageMeter()
 
+    # In PyTorch 0.4, "volatile=True" is deprecated.
+    torch.set_grad_enabled(True)
+
     if args.no_partialbn:
         model.module.partialBN(False)
     else:
@@ -176,8 +196,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # target size: [batch_size]
         target = target.cuda(async=True)
-        input_var = torch.autograd.Variable(input)
-        target_var = torch.autograd.Variable(target)
+        input_var = input
+        target_var = target
 
         # compute output, output size: [batch_size, num_class]
         output = model(input_var)
@@ -186,9 +206,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output.data, target, topk=(1,5))
-        losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
+        losses.update(loss.item(), input.size(0))
+        top1.update(prec1.item(), input.size(0))
+        top5.update(prec5.item(), input.size(0))
 
 
         # compute gradient and do SGD step
@@ -202,7 +222,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
                         p.grad /= args.iter_size
 
             if args.clip_gradient is not None:
-                total_norm = clip_grad_norm(model.parameters(), args.clip_gradient)
+                total_norm = clip_grad_norm_(model.parameters(), args.clip_gradient)
                 if total_norm > args.clip_gradient:
                     print("clipping gradient: {} with coef {}".format(total_norm, args.clip_gradient / total_norm))
             else:
@@ -212,7 +232,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
             optimizer.zero_grad()
 
         if args.clip_gradient is not None:
-            total_norm = clip_grad_norm(model.parameters(), args.clip_gradient)
+            total_norm = clip_grad_norm_(model.parameters(), args.clip_gradient)
             if total_norm > args.clip_gradient:
                 print("clipping gradient: {} with coef {}".format(total_norm, args.clip_gradient / total_norm))
 
@@ -239,6 +259,9 @@ def validate(val_loader, model, criterion, iter, logger=None):
     top1 = AverageMeter()
     top5 = AverageMeter()
 
+    # In PyTorch 0.4, "volatile=True" is deprecated.
+    torch.set_grad_enabled(False)
+
     # switch to evaluate mode
     model.eval()
 
@@ -248,8 +271,8 @@ def validate(val_loader, model, criterion, iter, logger=None):
         if i == len(val_loader)-1:
             break
         target = target.cuda(async=True)
-        input_var = torch.autograd.Variable(input, volatile=True)
-        target_var = torch.autograd.Variable(target, volatile=True)
+        input_var = input
+        target_var = target
 
         # compute output
         output = model(input_var)
@@ -258,9 +281,9 @@ def validate(val_loader, model, criterion, iter, logger=None):
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output.data, target, topk=(1,5))
 
-        losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
+        losses.update(loss.item(), input.size(0))
+        top1.update(prec1.item(), input.size(0))
+        top5.update(prec5.item(), input.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -282,7 +305,7 @@ def validate(val_loader, model, criterion, iter, logger=None):
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    filename = '_'.join((args.snapshot_pref, args.modality.lower(), filename))
+    filename = '_'.join((args.snapshot_pref, args.modality.lower(), "epoch", str(state['epoch']), filename))
     torch.save(state, filename)
     if is_best:
         best_name = '_'.join((args.snapshot_pref, args.modality.lower(), 'model_best.pth.tar'))
