@@ -1,4 +1,5 @@
-#### This is a fork of [Can Zhang](https://github.com/zhang-can/ECO-pytorch)'s PyTorch implementation for the [paper](https://arxiv.org/pdf/1804.09066.pdf). " ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018."  
+#### This is a fork of [Can Zhang](https://github.com/zhang-can/ECO-pytorch)'s PyTorch implementation for the [paper](https://arxiv.org/pdf/1804.09066.pdf):
+" ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018."  
  By Mohammadreza Zolfaghari, Kamaljeet Singh, Thomas Brox
  
  
