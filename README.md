@@ -1,8 +1,8 @@
-# This is a fork of Can Zhang's PyTorch implementation for the [paper](https://arxiv.org/pdf/1804.09066.pdf). " ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018."  
+### This is a fork of Can Zhang's PyTorch implementation for the [paper](https://arxiv.org/pdf/1804.09066.pdf). " ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018."  
  By Mohammadreza Zolfaghari, Kamaljeet Singh, Thomas Brox
  
  
-## NOTE
+#### NOTE
 * **Trained models on Kinetics dataset for ECO Lite and C3D can be downloaded. But these are not final models. 
 * **Keep watching for updates**
 
