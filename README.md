@@ -33,11 +33,10 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
 ### Training
 1. Download the initialization and trained models:
 
-	```Shell
-        sh models/download_models.sh
-	```
-        
-        
+```Shell
+      sh models/download_models.sh
+```
+
 2. Command for training ECO Lite model:
 
 ```bash
