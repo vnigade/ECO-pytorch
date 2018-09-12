@@ -37,6 +37,8 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
       sh models/download_models.sh
 ```
 
+* If you can not access Google Drive, please download the pretrained models from [BaiduYun](https://pan.baidu.com/s/1Hx52akJLR_ISfX406bkIog), and put them in "models" folder.
+
 2. Command for training ECO Lite model:
 
 ```bash
