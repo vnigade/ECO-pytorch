@@ -3,13 +3,12 @@ from torch import nn
 from .layer_factory import get_basic_layer, parse_expr
 import torch.utils.model_zoo as model_zoo
 import yaml
-from torch.nn.init import constant_, xavier_uniform_
 
 
 class ECO(nn.Module):
     def __init__(self, model_path='tf_model_zoo/ECO/ECO.yaml', num_classes=101,
-                       weight_url_2d='http://pa0630vji.bkt.gdipper.com/zhangcan/pth/models/bninception_rgb_kinetics_init-d4ee618d3399.pth',
                        num_segments=4, pretrained_parts='both'):
+
         super(ECO, self).__init__()
 
         self.num_segments = num_segments
@@ -28,7 +27,7 @@ class ECO(nn.Module):
             if op != 'Concat' and op != 'Eltwise':
                 id, out_name, module, out_channel, in_name = get_basic_layer(l,
                                                                 3 if len(self._channel_dict) == 0 else self._channel_dict[in_var[0]],
-                                                                             conv_bias=False if op == 'Conv3d' else True, num_segments=num_segments)
+                                                                             conv_bias=True if op == 'Conv3d' else True, num_segments=num_segments)
 
                 self._channel_dict[out_name] = out_channel
                 setattr(self, id, module)
@@ -42,69 +41,6 @@ class ECO(nn.Module):
                 channel = self._channel_dict[in_var[0]]
                 self._channel_dict[out_var[0]] = channel
 
-        model_dict = self.state_dict()
-        print("pretrained_parts: ", pretrained_parts)
-
-        if pretrained_parts == "scratch":
-            
-            new_state_dict = {}
-        
-        elif pretrained_parts == "2D":
-            
-            pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
-            new_state_dict = {k: v for k, v in pretrained_dict_2d['state_dict'].items() if k in model_dict}
-        
-        elif pretrained_parts == "3D":
-            
-            pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
-            new_state_dict = {k[18:]: v for k, v in pretrained_dict_3d['state_dict'].items() if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size())}
-        
-        elif pretrained_parts == "both":
-            
-            pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
-            new_state_dict = {k: v for k, v in pretrained_dict_2d['state_dict'].items() if k in model_dict}
-            pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
-            for k, v in pretrained_dict_3d['state_dict'].items():
-                if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size()):
-                    new_state_dict[k[18:]] = v
-
-        elif pretrained_parts == "finetune":
-            pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v1.pth.tar")
-            new_state_dict = {k[18:]: v for k, v in pretrained_dict['state_dict'].items() if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size())}
-            print("*"*50)
-            print("Start finetuning ..")
-        else:
-            raise ValueError('For C3Dresnet, "--pretrained_parts" can only be chosen from [scratch, 2D, 3D]')
-
-
-
-
-        # init the layer names which is not in pretrained model dict
-        un_init_dict_keys = [k for k in model_dict.keys() if k not in new_state_dict]
-        print("un_init_dict_keys: ", un_init_dict_keys)
-        print("\n------------------------------------")
-
-        std = 0.001
-        for k in un_init_dict_keys:
-            new_state_dict[k] = torch.DoubleTensor(model_dict[k].size()).zero_()
-            if 'weight' in k:
-                if 'bn' in k:
-                    print("{} init as: 1".format(k))
-                    constant_(new_state_dict[k], 1)
-                else:
-                    print("{} init as: xavier".format(k))
-                    xavier_uniform_(new_state_dict[k])
-            elif 'bias' in k:
-                print("{} init as: 0".format(k))
-                constant_(new_state_dict[k], 0)
-
-        print("------------------------------------")
-
-        self.load_state_dict(new_state_dict)
-    
-
-
-        # self.load_state_dict(torch.utils.model_zoo.load_url(weight_url))
 
     def forward(self, input):
         data_dict = dict()

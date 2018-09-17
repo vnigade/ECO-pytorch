@@ -182,28 +182,37 @@ TSN Configurations:
         self._enable_pbn = enable
 
     def get_optim_policies(self):
-        first_conv_weight = []
-        first_conv_bias = []
+        first_3d_conv_weight = []
+        first_3d_conv_bias = []
         normal_weight = []
         normal_bias = []
         bn = []
 
-        conv_cnt = 0
+        conv_2d_cnt = 0
+        conv_3d_cnt = 0
         bn_cnt = 0
         for m in self.modules():
             # (conv1d or conv2d) 1st layer's params will be append to list: first_conv_weight & first_conv_bias, total num 1 respectively(1 conv2d)
             # (conv1d or conv2d or Linear) from 2nd layers' params will be append to list: normal_weight & normal_bias, total num 69 respectively(68 Conv2d + 1 Linear)
-            if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.Conv1d) or isinstance(m, torch.nn.Conv3d):
+            if isinstance(m, torch.nn.Conv2d):
                 ps = list(m.parameters())
-                conv_cnt += 1
-                if conv_cnt == 1:
-                    first_conv_weight.append(ps[0])
+                conv_2d_cnt += 1
+                normal_weight.append(ps[0])
+                if len(ps) == 2:
+                    normal_bias.append(ps[1])
+
+            elif isinstance(m, torch.nn.Conv3d):
+                ps = list(m.parameters())
+                conv_3d_cnt += 1
+                if conv_3d_cnt == 1:
+                    first_3d_conv_weight.append(ps[0])
                     if len(ps) == 2:
-                        first_conv_bias.append(ps[1])
+                        first_3d_conv_bias.append(ps[1])
                 else:
                     normal_weight.append(ps[0])
                     if len(ps) == 2:
                         normal_bias.append(ps[1])
+
             elif isinstance(m, torch.nn.Linear):
                 ps = list(m.parameters())
                 normal_weight.append(ps[0])
@@ -227,10 +236,10 @@ TSN Configurations:
                 if len(list(m.parameters())) > 0:
                     raise ValueError("New atomic module type: {}. Need to give it a learning policy".format(type(m)))
         return [
-            {'params': first_conv_weight, 'lr_mult': 5 if self.modality == 'Flow' else 1, 'decay_mult': 1,
-             'name': "first_conv_weight"},
-            {'params': first_conv_bias, 'lr_mult': 10 if self.modality == 'Flow' else 2, 'decay_mult': 0,
-             'name': "first_conv_bias"},
+            {'params': first_3d_conv_weight, 'lr_mult': 5 if self.modality == 'Flow' else 1, 'decay_mult': 1,
+             'name': "first_3d_conv_weight"},
+            {'params': first_3d_conv_bias, 'lr_mult': 10 if self.modality == 'Flow' else 2, 'decay_mult': 0,
+             'name': "first_3d_conv_bias"},
             {'params': normal_weight, 'lr_mult': 1, 'decay_mult': 1,
              'name': "normal_weight"},
             {'params': normal_bias, 'lr_mult': 2, 'decay_mult': 0,
