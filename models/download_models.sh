@@ -1,7 +1,8 @@
 
 python gd_download.py 1J2mV0Kl9pWOK0FJ23ApHnJHQ3eq76D8a C3DResNet18_rgb_16F_kinetics_v1.pth.tar
 
-python gd_download.py 17rQFmTgB_NSjY8Fq3UaBHOrbZOdwQxFM eco_lite_rgb_16F_kinetics_v1.pth.tar
+#python gd_download.py 17rQFmTgB_NSjY8Fq3UaBHOrbZOdwQxFM eco_lite_rgb_16F_kinetics_v1.pth.tar
 
+python gd_download.py 1GsMyNxkbEr_2q6pn5cgVo3TMxAFthnrZ eco_lite_rgb_16F_kinetics_v2.pth.tar
 
 
