@@ -223,8 +223,8 @@ def init_ECO(model_dict):
 
     elif args.pretrained_parts == "finetune":
 
-        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v1.pth.tar")))
-        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v1.pth.tar")
+        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
+        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
         new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
         print("*"*50)
         print("Start finetuning ..")
