@@ -134,6 +134,19 @@ TSN Configurations:
             elif self.modality == 'RGBDiff':
                 self.input_mean = self.input_mean * (1 + self.new_length)
 
+        elif base_model == 'ECOfull':
+            import tf_model_zoo
+            self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments, pretrained_parts=self.pretrained_parts)
+            self.base_model.last_layer_name = 'fc_final'
+            self.input_size = 224
+            self.input_mean = [104, 117, 128]
+            self.input_std = [1]
+
+            if self.modality == 'Flow':
+                self.input_mean = [128]
+            elif self.modality == 'RGBDiff':
+                self.input_mean = self.input_mean * (1 + self.new_length)
+
         elif base_model == 'BN2to1D':
             import tf_model_zoo
             self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments)
@@ -349,6 +362,10 @@ TSN Configurations:
                 output = self.consensus(base_out)
                 return output
             elif self.base_model_name == 'ECO':
+                output = base_out
+                output = self.consensus(base_out)
+                return output
+            elif self.base_model_name == 'ECOfull':
                 output = base_out
                 output = self.consensus(base_out)
                 return output

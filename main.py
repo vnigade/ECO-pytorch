@@ -78,6 +78,8 @@ def main():
 
     if args.arch == "ECO":
         new_state_dict = init_ECO(model_dict)
+    if args.arch == "ECOfull":
+        new_state_dict = init_ECOfull(model_dict)
     elif args.arch == "C3DRes18":
         new_state_dict = init_C3DRes18(model_dict)
 
@@ -134,8 +136,8 @@ def main():
                    image_tmpl=args.rgb_prefix+rgb_read_format if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+rgb_read_format,
                    transform=torchvision.transforms.Compose([
                        train_augmentation,
-                       Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO')),
-                       ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO')),
+                       Stack(roll=True),
+                       ToTorchFormatTensor(div=False),
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=True,
@@ -150,8 +152,8 @@ def main():
                    transform=torchvision.transforms.Compose([
                        GroupScale(int(scale_size)),
                        GroupCenterCrop(crop_size),
-                       Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO')),
-                       ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO')),
+                       Stack(roll=True),
+                       ToTorchFormatTensor(div=False),
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=False,
@@ -197,6 +199,53 @@ def main():
             }, is_best)
 
 def init_ECO(model_dict):
+
+    weight_url_2d='https://yjxiong.blob.core.windows.net/ssn-models/bninception_rgb_kinetics_init-d4ee618d3399.pth'
+
+    if args.pretrained_parts == "scratch":
+            
+        new_state_dict = {}
+
+    elif args.pretrained_parts == "2D":
+
+        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
+        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
+
+    elif args.pretrained_parts == "3D":
+
+        new_state_dict = {}
+        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        for k, v in pretrained_dict_3d['state_dict'].items():
+            if (k in model_dict) and (v.size() == model_dict[k].size()):
+                new_state_dict[k] = v
+
+        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
+        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
+
+
+    elif args.pretrained_parts == "finetune":
+
+        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
+        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
+        new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
+        print("*"*50)
+        print("Start finetuning ..")
+
+    elif args.pretrained_parts == "both":
+
+        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
+        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
+        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        for k, v in pretrained_dict_3d['state_dict'].items():
+            if (k in model_dict) and (v.size() == model_dict[k].size()):
+                new_state_dict[k] = v
+
+        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
+        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
+
+    return new_state_dict
+
+def init_ECOfull(model_dict):
 
     weight_url_2d='https://yjxiong.blob.core.windows.net/ssn-models/bninception_rgb_kinetics_init-d4ee618d3399.pth'
 
