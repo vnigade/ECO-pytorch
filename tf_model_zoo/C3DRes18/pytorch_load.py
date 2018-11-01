@@ -27,7 +27,7 @@ class C3DRes18(nn.Module):
             if op != 'Concat' and op != 'Eltwise':
                 id, out_name, module, out_channel, in_name = get_basic_layer(l,
                                                                 3 if len(self._channel_dict) == 0 else self._channel_dict[in_var[0]],
-                                                                             conv_bias=False if op == 'Conv3d' else True, num_segments=num_segments)
+                                                                             conv_bias=True if op == 'Conv3d' else True, num_segments=num_segments)
 
                 self._channel_dict[out_name] = out_channel
                 setattr(self, id, module)
@@ -40,44 +40,6 @@ class C3DRes18(nn.Module):
                 self._op_list.append((id, op, out_var[0], in_var))
                 channel = self._channel_dict[in_var[0]]
                 self._channel_dict[out_var[0]] = channel
-
-        model_dict = self.state_dict()
-        print("pretrained_parts: ", pretrained_parts)
-
-        if pretrained_parts == "scratch":
-            new_state_dict = {}
-        elif pretrained_parts == "3D":
-            pretrained_dict = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
-            new_state_dict = {k[18:]: v for k, v in pretrained_dict['state_dict'].items() if (k[18:] in model_dict) and (v.size() == model_dict[k[18:]].size())}
-        else:
-            raise ValueError('For C3DRes18, "--pretrained_parts" can only be chosen from [scratch, 3D]')
-        
-        # init the layer names which is not in pretrained model dict
-        un_init_dict_keys = [k for k in model_dict.keys() if k not in new_state_dict]
-        print("un_init_dict_keys: ", un_init_dict_keys)
-        print("\n------------------------------------")
-
-        std = 0.001
-        for k in un_init_dict_keys:
-            new_state_dict[k] = torch.DoubleTensor(model_dict[k].size()).zero_()
-            if 'weight' in k:
-                if 'bn' in k:
-                    print("{} init as: 1".format(k))
-                    constant_(new_state_dict[k], 1)
-                else:
-                    print("{} init as: xavier".format(k))
-                    xavier_uniform_(new_state_dict[k])
-            elif 'bias' in k:
-                print("{} init as: 0".format(k))
-                constant_(new_state_dict[k], 0)
-
-        print("------------------------------------")
-
-        self.load_state_dict(new_state_dict)
-    
-
-
-        # self.load_state_dict(torch.utils.model_zoo.load_url(weight_url))
 
     def forward(self, input):
         data_dict = dict()

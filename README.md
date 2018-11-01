@@ -3,7 +3,7 @@
  
  
 ##### NOTE
-* Trained models on Kinetics dataset for ECO Lite and C3D are provided but they are not final models. 
+* Trained models on Kinetics dataset for ECO Lite and C3D are provided. 
 * **Keep watching for updates**
 
 * Pre-trained model for 2D-Net is provided by [tsn-pytorch](https://github.com/yjxiong/tsn-pytorch).
@@ -51,6 +51,12 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
     ./scripts/run_c3dres_kinetics.sh local
 ```
 
+4. For finetuning on UCF101 use the following command:
+
+```bash
+    ./scripts/run_ECOLite_finetune_UCF101.sh local
+```
+
 ### NOTE
 * If you want to train your model from scratch change the config as following:
 ```bash
@@ -81,7 +87,3 @@ year={2018}
   [Mohammadreza Zolfaghari](https://github.com/mzolfaghari/ECO-pytorch), [Can Zhang](https://github.com/zhang-can/ECO-pytorch)
 
   Questions can also be left as issues in the repository. We will be happy to answer them.
-
-
-
-

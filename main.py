@@ -14,6 +14,8 @@ from models import TSN
 from transforms import *
 from opts import parser
 import sys
+import torch.utils.model_zoo as model_zoo
+from torch.nn.init import constant_, xavier_uniform_
 
 best_prec1 = 0
 
@@ -42,7 +44,7 @@ def main():
         num_class = 51
     elif args.dataset == 'kinetics':
         num_class = 400
-        rgb_read_format = "{:04d}.jpg"
+        rgb_read_format = "{:05d}.jpg"
     elif args.dataset == 'something':
         num_class = 174
         rgb_read_format = "{:04d}.jpg"
@@ -64,14 +66,43 @@ def main():
     # and should contain a params key, containing a list of parameters belonging to it. 
     # Other keys should match the keyword arguments accepted by the optimizers, 
     # and will be used as optimization options for this group.
-    if args.arch == "BN2to1D":
-        policies = model.get_optim_policies_BN2to1D()
-    else:
-        policies = model.get_optim_policies()
+    policies = model.get_optim_policies()
 
     train_augmentation = model.get_augmentation()
 
     model = torch.nn.DataParallel(model, device_ids=args.gpus).cuda()
+
+    model_dict = model.state_dict()
+
+    print("pretrained_parts: ", args.pretrained_parts)
+
+    if args.arch == "ECO":
+        new_state_dict = init_ECO(model_dict)
+    if args.arch == "ECOfull":
+        new_state_dict = init_ECOfull(model_dict)
+    elif args.arch == "C3DRes18":
+        new_state_dict = init_C3DRes18(model_dict)
+
+    un_init_dict_keys = [k for k in model_dict.keys() if k not in new_state_dict]
+    print("un_init_dict_keys: ", un_init_dict_keys)
+    print("\n------------------------------------")
+
+    for k in un_init_dict_keys:
+        new_state_dict[k] = torch.DoubleTensor(model_dict[k].size()).zero_()
+        if 'weight' in k:
+            if 'bn' in k:
+                print("{} init as: 1".format(k))
+                constant_(new_state_dict[k], 1)
+            else:
+                print("{} init as: xavier".format(k))
+                xavier_uniform_(new_state_dict[k])
+        elif 'bias' in k:
+            print("{} init as: 0".format(k))
+            constant_(new_state_dict[k], 0)
+
+    print("------------------------------------")
+
+    model.load_state_dict(new_state_dict)
 
     if args.resume:
         if os.path.isfile(args.resume):
@@ -81,7 +112,7 @@ def main():
             best_prec1 = checkpoint['best_prec1']
             model.load_state_dict(checkpoint['state_dict'])
             print(("=> loaded checkpoint '{}' (epoch {})"
-                  .format(args.evaluate, checkpoint['epoch'])))
+                  .format(args.resume, checkpoint['epoch'])))
         else:
             print(("=> no checkpoint found at '{}'".format(args.resume)))
 
@@ -105,8 +136,8 @@ def main():
                    image_tmpl=args.rgb_prefix+rgb_read_format if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+rgb_read_format,
                    transform=torchvision.transforms.Compose([
                        train_augmentation,
-                       Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO')),
-                       ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO')),
+                       Stack(roll=True),
+                       ToTorchFormatTensor(div=False),
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=True,
@@ -121,8 +152,8 @@ def main():
                    transform=torchvision.transforms.Compose([
                        GroupScale(int(scale_size)),
                        GroupCenterCrop(crop_size),
-                       Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO')),
-                       ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO')),
+                       Stack(roll=True),
+                       ToTorchFormatTensor(div=False),
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=False,
@@ -167,6 +198,111 @@ def main():
                 'best_prec1': best_prec1,
             }, is_best)
 
+def init_ECO(model_dict):
+
+    weight_url_2d='https://yjxiong.blob.core.windows.net/ssn-models/bninception_rgb_kinetics_init-d4ee618d3399.pth'
+
+    if args.pretrained_parts == "scratch":
+            
+        new_state_dict = {}
+
+    elif args.pretrained_parts == "2D":
+
+        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
+        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
+
+    elif args.pretrained_parts == "3D":
+
+        new_state_dict = {}
+        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        for k, v in pretrained_dict_3d['state_dict'].items():
+            if (k in model_dict) and (v.size() == model_dict[k].size()):
+                new_state_dict[k] = v
+
+        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
+        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
+
+
+    elif args.pretrained_parts == "finetune":
+
+        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
+        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
+        new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
+        print("*"*50)
+        print("Start finetuning ..")
+
+    elif args.pretrained_parts == "both":
+
+        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
+        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
+        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        for k, v in pretrained_dict_3d['state_dict'].items():
+            if (k in model_dict) and (v.size() == model_dict[k].size()):
+                new_state_dict[k] = v
+
+        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
+        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
+
+    return new_state_dict
+
+def init_ECOfull(model_dict):
+
+    weight_url_2d='https://yjxiong.blob.core.windows.net/ssn-models/bninception_rgb_kinetics_init-d4ee618d3399.pth'
+
+    if args.pretrained_parts == "scratch":
+            
+        new_state_dict = {}
+
+    elif args.pretrained_parts == "2D":
+
+        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
+        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
+
+    elif args.pretrained_parts == "3D":
+
+        new_state_dict = {}
+        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        for k, v in pretrained_dict_3d['state_dict'].items():
+            if (k in model_dict) and (v.size() == model_dict[k].size()):
+                new_state_dict[k] = v
+
+        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
+        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
+
+
+    elif args.pretrained_parts == "finetune":
+
+        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
+        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
+        new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
+        print("*"*50)
+        print("Start finetuning ..")
+
+    elif args.pretrained_parts == "both":
+
+        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
+        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
+        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        for k, v in pretrained_dict_3d['state_dict'].items():
+            if (k in model_dict) and (v.size() == model_dict[k].size()):
+                new_state_dict[k] = v
+
+        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
+        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
+
+    return new_state_dict
+
+def init_C3DRes18(model_dict):
+
+    if args.pretrained_parts == "scratch":
+        new_state_dict = {}
+    elif args.pretrained_parts == "3D":
+        pretrained_dict = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
+        new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
+    else:
+        raise ValueError('For C3DRes18, "--pretrained_parts" can only be chosen from [scratch, 3D]')
+
+    return new_state_dict
 
 def train(train_loader, model, criterion, optimizer, epoch):
     batch_time = AverageMeter()

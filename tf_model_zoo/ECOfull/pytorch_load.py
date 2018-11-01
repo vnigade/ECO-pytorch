@@ -5,11 +5,11 @@ import torch.utils.model_zoo as model_zoo
 import yaml
 
 
-class ECO(nn.Module):
-    def __init__(self, model_path='tf_model_zoo/ECO/ECO.yaml', num_classes=101,
+class ECOfull(nn.Module):
+    def __init__(self, model_path='tf_model_zoo/ECOfull/ECOfull.yaml', num_classes=101,
                        num_segments=4, pretrained_parts='both'):
 
-        super(ECO, self).__init__()
+        super(ECOfull, self).__init__()
 
         self.num_segments = num_segments
 
@@ -55,10 +55,10 @@ class ECO(nn.Module):
         for op in self._op_list:
             if op[1] != 'Concat' and op[1] != 'InnerProduct' and op[1] != 'Eltwise':
                 # first 3d conv layer judge, the last 2d conv layer's output must be transpose from 4d to 5d
-                if op[0] == 'res3a_2':
-                    inception_3c_output = data_dict['inception_3c_double_3x3_1_bn']
-                    inception_3c_transpose_output = torch.transpose(inception_3c_output.view((-1, self.num_segments) + inception_3c_output.size()[1:]), 1, 2)
-                    data_dict[op[2]] = getattr(self, op[0])(inception_3c_transpose_output)
+                if op[0] == 'res3a_2' or op[0] == 'global_pool2D_reshape_consensus':
+                    layer_output = data_dict[op[-1]]
+                    layer_transpose_output = torch.transpose(layer_output.view((-1, self.num_segments) + layer_output.size()[1:]), 1, 2)
+                    data_dict[op[2]] = getattr(self, op[0])(layer_transpose_output)
                 else:
                     data_dict[op[2]] = getattr(self, op[0])(data_dict[op[-1]])
                     # getattr(self, op[0]).register_backward_hook(get_hook(op[0]))
