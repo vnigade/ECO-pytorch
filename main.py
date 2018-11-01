@@ -228,11 +228,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
             else:
                 total_norm = 0
 
-            if args.clip_gradient is not None:
-                total_norm = clip_grad_norm_(model.parameters(), args.clip_gradient)
-                if total_norm > args.clip_gradient:
-                    print("clipping gradient: {} with coef {}".format(total_norm, args.clip_gradient / total_norm))
-
             optimizer.step()
             optimizer.zero_grad()
 
