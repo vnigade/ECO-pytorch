@@ -651,9 +651,12 @@ layers:
 - attrs: {kernel_size: 7, mode: ave, stride: 1}
   expr: global_pool2D_pre<=Pooling<=inception_5b_output
   id: global_pool2D_pre
+<<<<<<< HEAD
 - attrs: {dropout_ratio: 0.5}
   expr: global_pool2D_pre<=Dropout<=global_pool2D_pre 
   id: global_pool2D_pre_drop
+=======
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
 - attrs: {kernel_d: 'N/1', kernel_h: 1, kernel_w: 1, stride: 1, mode: ave}
   expr: global_pool2D_reshape_consensus<=Pooling3d<=global_pool2D_pre
@@ -662,10 +665,13 @@ layers:
 - attrs: {kernel_d: 'N/4', kernel_h: 7, kernel_w: 7, stride: 1, mode: ave}
   expr: global_pool3D<=Pooling3d<=res5b_bn
   id: global_pool3D
+<<<<<<< HEAD
 - attrs: {dropout_ratio: 0.3}
   expr: global_pool3D<=Dropout<=global_pool3D 
   id: global_pool3D_drop
 
+=======
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
 - {expr: 'global_pool<=Concat<=global_pool2D_reshape_consensus,global_pool3D',
   id: global_pool}
@@ -673,4 +679,8 @@ layers:
 - attrs: {num_output: 400}
   expr: fc_action<=InnerProduct<=global_pool
   id: fc_final
+<<<<<<< HEAD
 name: ECOfull
+=======
+name: ECO
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a

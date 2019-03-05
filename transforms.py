@@ -132,7 +132,11 @@ class GroupOverSample(object):
 class GroupMultiScaleCrop(object):
 
     def __init__(self, input_size, scales=None, max_distort=1, fix_crop=True, more_fix_crop=True):
+<<<<<<< HEAD
         self.scales = scales if scales is not None else [1, .875, .75, .66]
+=======
+        self.scales = scales if scales is not None else [1, 875, .75, .66]
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         self.max_distort = max_distort
         self.fix_crop = fix_crop
         self.more_fix_crop = more_fix_crop
@@ -319,4 +323,8 @@ if __name__ == "__main__":
             mean=[.485, .456, .406],
             std=[.229, .224, .225])
     ])
+<<<<<<< HEAD
     print(trans2(color_group))
+=======
+    print(trans2(color_group))
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a

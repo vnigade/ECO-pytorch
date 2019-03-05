@@ -1,13 +1,21 @@
 import argparse
+<<<<<<< HEAD
 parser = argparse.ArgumentParser(description="PyTorch implementation of ECO")
+=======
+parser = argparse.ArgumentParser(description="PyTorch implementation of Temporal Segment Networks")
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 parser.add_argument('dataset', type=str, choices=['ucf101', 'hmdb51', 'kinetics', 'something','jhmdb'])
 parser.add_argument('modality', type=str, choices=['RGB', 'Flow', 'RGBDiff'])
 parser.add_argument('train_list', type=str)
 parser.add_argument('val_list', type=str)
+<<<<<<< HEAD
 parser.add_argument('--net_model', type=str, default=None)
 parser.add_argument('--net_model2D', type=str, default=None)
 parser.add_argument('--net_modelECO', type=str, default=None)
 parser.add_argument('--net_model3D', type=str, default=None)
+=======
+
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 # ========================= Model Configs ==========================
 parser.add_argument('--arch', type=str, default="resnet101")
 parser.add_argument('--num_segments', type=int, default=3)
@@ -41,9 +49,12 @@ parser.add_argument('--clip-gradient', '--gd', default=None, type=float,
                     metavar='W', help='gradient norm clipping (default: disabled)')
 parser.add_argument('--no_partialbn', '--npb', default=False, action="store_true")
 parser.add_argument('--nesterov',  default=False)
+<<<<<<< HEAD
 parser.add_argument('--num_saturate', type=int, default=5,
                     help='if number of epochs that validation Prec@1 saturates, then decrease lr by 10 (default: 5)')
 
+=======
+>>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 # ========================= Monitor Configs ==========================
 parser.add_argument('--print-freq', '-p', default=20, type=int,
                     metavar='N', help='print frequency (default: 10)')
