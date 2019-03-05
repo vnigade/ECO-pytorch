@@ -108,10 +108,7 @@ TSN Configurations:
             elif self.modality == 'RGBDiff':
                 self.input_mean = [0.485, 0.456, 0.406] + [0] * 3 * self.new_length
                 self.input_std = self.input_std + [np.mean(self.input_std) * 2] * 3 * self.new_length
-<<<<<<< HEAD
 
-=======
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         elif base_model == 'C3DRes18':
             import tf_model_zoo
             self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments, pretrained_parts=self.pretrained_parts)
@@ -138,11 +135,7 @@ TSN Configurations:
             elif self.modality == 'RGBDiff':
                 self.input_mean = self.input_mean * (1 + self.new_length)
 
-<<<<<<< HEAD
         elif base_model == 'ECOfull' :
-=======
-        elif base_model == 'ECOfull':
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
             import tf_model_zoo
             self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments, pretrained_parts=self.pretrained_parts)
             self.base_model.last_layer_name = 'fc_final'
@@ -155,10 +148,7 @@ TSN Configurations:
             elif self.modality == 'RGBDiff':
                 self.input_mean = self.input_mean * (1 + self.new_length)
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         elif base_model == 'BN2to1D':
             import tf_model_zoo
             self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments)
@@ -192,11 +182,7 @@ TSN Configurations:
         if self._enable_pbn:
             print("Freezing BatchNorm2D except the first one.")
             for m in self.base_model.modules():
-<<<<<<< HEAD
                 if (isinstance(m, nn.BatchNorm2d) or isinstance(m, nn.BatchNorm3d)):
-=======
-                if isinstance(m, nn.BatchNorm2d):
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
                     count += 1
                     if count >= (2 if self._enable_pbn else 1):
                         m.eval()
@@ -488,8 +474,4 @@ TSN Configurations:
                                                    GroupRandomHorizontalFlip(is_flow=True)])
         elif self.modality == 'RGBDiff':
             return torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size, [1, .875, .75]),
-<<<<<<< HEAD
                                                    GroupRandomHorizontalFlip(is_flow=False)])
-=======
-                                                   GroupRandomHorizontalFlip(is_flow=False)])
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
