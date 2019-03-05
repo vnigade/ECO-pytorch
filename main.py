@@ -42,16 +42,10 @@ def main():
         rgb_read_format = "{:05d}.jpg"
     elif args.dataset == 'hmdb51':
         num_class = 51
-<<<<<<< HEAD
         rgb_read_format = "{:05d}.jpg"
     elif args.dataset == 'kinetics':
         num_class = 400
         rgb_read_format = "{:04d}.jpg"
-=======
-    elif args.dataset == 'kinetics':
-        num_class = 400
-        rgb_read_format = "{:05d}.jpg"
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
     elif args.dataset == 'something':
         num_class = 174
         rgb_read_format = "{:04d}.jpg"
@@ -83,42 +77,11 @@ def main():
 
     print("pretrained_parts: ", args.pretrained_parts)
 
-<<<<<<< HEAD
-=======
-    if args.arch == "ECO":
-        new_state_dict = init_ECO(model_dict)
-    if args.arch == "ECOfull":
-        new_state_dict = init_ECOfull(model_dict)
-    elif args.arch == "C3DRes18":
-        new_state_dict = init_C3DRes18(model_dict)
-
-    un_init_dict_keys = [k for k in model_dict.keys() if k not in new_state_dict]
-    print("un_init_dict_keys: ", un_init_dict_keys)
-    print("\n------------------------------------")
-
-    for k in un_init_dict_keys:
-        new_state_dict[k] = torch.DoubleTensor(model_dict[k].size()).zero_()
-        if 'weight' in k:
-            if 'bn' in k:
-                print("{} init as: 1".format(k))
-                constant_(new_state_dict[k], 1)
-            else:
-                print("{} init as: xavier".format(k))
-                xavier_uniform_(new_state_dict[k])
-        elif 'bias' in k:
-            print("{} init as: 0".format(k))
-            constant_(new_state_dict[k], 0)
-
-    print("------------------------------------")
-
-    model.load_state_dict(new_state_dict)
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
     if args.resume:
         if os.path.isfile(args.resume):
             print(("=> loading checkpoint '{}'".format(args.resume)))
             checkpoint = torch.load(args.resume)
-<<<<<<< HEAD
             # if not checkpoint['lr']:
             if "lr" not in checkpoint.keys():
                 args.lr = input("No 'lr' attribute found in resume model, please input the 'lr' manually: ")
@@ -163,24 +126,12 @@ def main():
          model.load_state_dict(new_state_dict)
 
 
-=======
-            args.start_epoch = checkpoint['epoch']
-            best_prec1 = checkpoint['best_prec1']
-            model.load_state_dict(checkpoint['state_dict'])
-            print(("=> loaded checkpoint '{}' (epoch {})"
-                  .format(args.resume, checkpoint['epoch'])))
-        else:
-            print(("=> no checkpoint found at '{}'".format(args.resume)))
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
     cudnn.benchmark = True
 
     # Data loading code
     if args.modality != 'RGBDiff':
-<<<<<<< HEAD
         #input_mean = [0,0,0] #for debugging
-=======
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         normalize = GroupNormalize(input_mean, input_std)
     else:
         normalize = IdentityTransform()
@@ -215,11 +166,8 @@ def main():
                        GroupCenterCrop(crop_size),
                        Stack(roll=True),
                        ToTorchFormatTensor(div=False),
-<<<<<<< HEAD
                        #Stack(roll=(args.arch == 'C3DRes18') or (args.arch == 'ECO') or (args.arch == 'ECOfull') or (args.arch == 'ECO_2FC')),
                        #ToTorchFormatTensor(div=(args.arch != 'C3DRes18') and (args.arch != 'ECO') and (args.arch != 'ECOfull') and (args.arch != 'ECO_2FC')),
-=======
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
                        normalize,
                    ])),
         batch_size=args.batch_size, shuffle=False,
@@ -244,7 +192,6 @@ def main():
         validate(val_loader, model, criterion, 0)
         return
 
-<<<<<<< HEAD
     saturate_cnt = 0
     exp_num = 0
 
@@ -254,10 +201,6 @@ def main():
             saturate_cnt = 0
             print("- Learning rate decreases by a factor of '{}'".format(10**(exp_num)))
         adjust_learning_rate(optimizer, epoch, args.lr_steps, exp_num)
-=======
-    for epoch in range(args.start_epoch, args.epochs):
-        adjust_learning_rate(optimizer, epoch, args.lr_steps)
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch)
@@ -268,25 +211,19 @@ def main():
 
             # remember best prec@1 and save checkpoint
             is_best = prec1 > best_prec1
-<<<<<<< HEAD
             if is_best:
                 saturate_cnt = 0
             else:
                 saturate_cnt = saturate_cnt + 1
 
             print("- Validation Prec@1 saturates for {} epochs.".format(saturate_cnt))
-=======
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
             best_prec1 = max(prec1, best_prec1)
             save_checkpoint({
                 'epoch': epoch + 1,
                 'arch': args.arch,
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
-<<<<<<< HEAD
                 'lr': optimizer.param_groups[-1]['lr'],
-=======
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
             }, is_best)
 
 def init_ECO(model_dict):
@@ -299,7 +236,6 @@ def init_ECO(model_dict):
 
     elif args.pretrained_parts == "2D":
 
-<<<<<<< HEAD
         if args.net_model2D is not None:
             pretrained_dict_2d = torch.load(args.net_model2D)
             print(("=> loading model - 2D net:  '{}'".format(args.net_model2D)))
@@ -316,15 +252,11 @@ def init_ECO(model_dict):
                  print("Problem!")
                  print("k: {}, size: {}".format(k,v.shape))
        
-=======
-        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
 
     elif args.pretrained_parts == "3D":
 
         new_state_dict = {}
-<<<<<<< HEAD
         if args.net_model3D is not None:
             pretrained_dict_3d = torch.load(args.net_model3D)
             print(("=> loading model - 3D net:  '{}'".format(args.net_model3D)))
@@ -332,9 +264,6 @@ def init_ECO(model_dict):
             pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
             print(("=> loading model - 3D net-url:  '{}'".format("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")))
 
-=======
-        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         for k, v in pretrained_dict_3d['state_dict'].items():
             if (k in model_dict) and (v.size() == model_dict[k].size()):
                 new_state_dict[k] = v
@@ -344,7 +273,6 @@ def init_ECO(model_dict):
 
 
     elif args.pretrained_parts == "finetune":
-<<<<<<< HEAD
         print(args.net_modelECO)
         print("88"*40)
         if args.net_modelECO is not None:
@@ -357,18 +285,12 @@ def init_ECO(model_dict):
 
 
 
-=======
-
-        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
-        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
         print("*"*50)
         print("Start finetuning ..")
 
     elif args.pretrained_parts == "both":
 
-<<<<<<< HEAD
         # Load the 2D net pretrained model
         if args.net_model2D is not None:
             pretrained_dict_2d = torch.load(args.net_model2D)
@@ -389,21 +311,12 @@ def init_ECO(model_dict):
 
         new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
 
-=======
-        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
-        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
-        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         for k, v in pretrained_dict_3d['state_dict'].items():
             if (k in model_dict) and (v.size() == model_dict[k].size()):
                 new_state_dict[k] = v
 
         res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
         new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
-<<<<<<< HEAD
-=======
-
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
     return new_state_dict
 
 def init_ECOfull(model_dict):
@@ -431,7 +344,6 @@ def init_ECOfull(model_dict):
         new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
 
 
-<<<<<<< HEAD
 
     elif args.pretrained_parts == "finetune":
         print(args.net_modelECO)
@@ -443,19 +355,12 @@ def init_ECOfull(model_dict):
             pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
             print(("=> loading model-finetune-url: '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
 
-=======
-    elif args.pretrained_parts == "finetune":
-
-        print(("=> loading model '{}'".format("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")))
-        pretrained_dict = torch.load("models/eco_lite_rgb_16F_kinetics_v2.pth.tar")
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         new_state_dict = {k: v for k, v in pretrained_dict['state_dict'].items() if (k in model_dict) and (v.size() == model_dict[k].size())}
         print("*"*50)
         print("Start finetuning ..")
 
     elif args.pretrained_parts == "both":
 
-<<<<<<< HEAD
         # Load the 2D net pretrained model
         if args.net_model2D is not None:
             pretrained_dict_2d = torch.load(args.net_model2D)
@@ -476,22 +381,12 @@ def init_ECOfull(model_dict):
             print(("=> loading model - 3D net-url:  '{}'".format("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")))
 
 
-=======
-        pretrained_dict_2d = torch.utils.model_zoo.load_url(weight_url_2d)
-        new_state_dict = {"module.base_model."+k: v for k, v in pretrained_dict_2d['state_dict'].items() if "module.base_model."+k in model_dict}
-        pretrained_dict_3d = torch.load("models/C3DResNet18_rgb_16F_kinetics_v1.pth.tar")
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         for k, v in pretrained_dict_3d['state_dict'].items():
             if (k in model_dict) and (v.size() == model_dict[k].size()):
                 new_state_dict[k] = v
 
-<<<<<<< HEAD
         #res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
         #new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
-=======
-        res3a_2_weight_chunk = torch.chunk(pretrained_dict_3d["state_dict"]["module.base_model.res3a_2.weight"], 4, 1)
-        new_state_dict["module.base_model.res3a_2.weight"] = torch.cat((res3a_2_weight_chunk[0], res3a_2_weight_chunk[1], res3a_2_weight_chunk[2]), 1)
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
     return new_state_dict
 
@@ -526,7 +421,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
     model.train()
 
     end = time.time()
-<<<<<<< HEAD
 
     loss_summ = 0
     localtime   = time.localtime()
@@ -534,10 +428,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
     for i, (input, target) in enumerate(train_loader):
         # discard final batch
 
-=======
-    for i, (input, target) in enumerate(train_loader):
-        # discard final batch
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
         if i == len(train_loader)-1:
             break
         # measure data loading time
@@ -549,7 +439,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
         target_var = target
 
         # compute output, output size: [batch_size, num_class]
-<<<<<<< HEAD
 
         output = model(input_var)
 
@@ -596,53 +485,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
         end_time  = time.strftime("%Y/%m/%d-%H:%M:%S", localtime)
 
 
-=======
-        output = model(input_var)
-
-        loss = criterion(output, target_var)
-
-        # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1,5))
-        losses.update(loss.item(), input.size(0))
-        top1.update(prec1.item(), input.size(0))
-        top5.update(prec5.item(), input.size(0))
-
-
-        # compute gradient and do SGD step
-        loss.backward()
-
-        if i % args.iter_size == 0:
-            # scale down gradients when iter size is functioning
-            if args.iter_size != 1:
-                for g in optimizer.param_groups:
-                    for p in g['params']:
-                        p.grad /= args.iter_size
-
-            if args.clip_gradient is not None:
-                total_norm = clip_grad_norm_(model.parameters(), args.clip_gradient)
-                if total_norm > args.clip_gradient:
-                    print("clipping gradient: {} with coef {}".format(total_norm, args.clip_gradient / total_norm))
-            else:
-                total_norm = 0
-
-            optimizer.step()
-            optimizer.zero_grad()
-
-
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        if i % args.print_freq == 0:
-            print(('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                   epoch, i, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr'])))
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
 
 
 def validate(val_loader, model, criterion, iter, logger=None):
@@ -722,16 +564,10 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-<<<<<<< HEAD
 def adjust_learning_rate(optimizer, epoch, lr_steps, exp_num):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     # decay = 0.1 ** (sum(epoch >= np.array(lr_steps)))
     decay = 0.1 ** (exp_num)
-=======
-def adjust_learning_rate(optimizer, epoch, lr_steps):
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    decay = 0.1 ** (sum(epoch >= np.array(lr_steps)))
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
     lr = args.lr * decay
     decay = args.weight_decay
     for param_group in optimizer.param_groups:
