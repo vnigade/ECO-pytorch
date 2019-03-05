@@ -2,15 +2,15 @@
 ##### " ECO: Efficient Convolutional Network for Online Video Understanding, European Conference on Computer Vision (ECCV), 2018." By Mohammadreza Zolfaghari, Kamaljeet Singh, Thomas Brox
  
  
-##### NOTE
-<<<<<<< HEAD
-* Trained models on Kinetics dataset for ECO Lite and C3D are provided but they are not final models. 
-=======
-* Trained models on Kinetics dataset for ECO Lite and C3D are provided. 
->>>>>>> 1da05d6e7d9dc0b61b5fd230758ee355c9700f8a
-* **Keep watching for updates**
+ ### Update
+- **2019.3.05**: This is a major update. This update is more robust and we solved some problems in the previous version such as iter_size and ECO Full model definiation. Updating the training procedure (main.py) and providing the pretrained models for ECOLite and ECOFull. Please let us know if you found any problem or had suggestions to improve the code.
 
+
+##### NOTE
+
+* Trained models on Kinetics dataset for ECO Lite and C3D are provided. 
 * Pre-trained model for 2D-Net is provided by [tsn-pytorch](https://github.com/yjxiong/tsn-pytorch).
+* **Stay tuned for more updates**
 
 
 ### Environment:
@@ -38,6 +38,12 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
 1. Download the initialization and trained models:
 
 ```Shell
+      ECO-Lite pretrained model on Kinetics: https://drive.google.com/open?id=1XNIq7byciKgrn011jLBggd2g79jKX4uD
+      ECO-Full pretrained model on Kinetics: https://drive.google.com/open?id=1ATuN_KctsbFAbcNgWDlETZVsy2vhxZay
+
+```
+Othe models:
+```Shell
       sh models/download_models.sh
 ```
 
@@ -58,7 +64,9 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
 4. For finetuning on UCF101 use the following command:
 
 ```bash
-    ./scripts/run_ECOLite_finetune_UCF101.sh local
+    sh run_demo_ECO_Lite.sh local 
+    or 
+    sh run_demo_ECO_Full.sh local
 ```
 
 ### NOTE
@@ -69,8 +77,7 @@ e.g. python gen_dataset_lists.py something ~/dataset/20bn-something-something-v1
 * configurations explained in "opts.py"
 
 #### TODO
-1. ECO Full
-2. Trained models on other datasets
+1. Trained models on other datasets
 
 
 #### Citation
