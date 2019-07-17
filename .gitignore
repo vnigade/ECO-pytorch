@@ -108,3 +108,8 @@ data/*.txt
 *.pth
 
 output/
+**/Pipfile*
+**/*.swp
+**/dump_scores
+**/net_runs
+**/*.out

@@ -27,7 +27,8 @@ class TSNDataSet(data.Dataset):
     def __init__(self, root_path, list_file,
                  num_segments=3, new_length=1, modality='RGB',
                  image_tmpl='img_{:05d}.jpg', transform=None,
-                 force_grayscale=False, random_shift=True, test_mode=False):
+                 force_grayscale=False, random_shift=True, test_mode=False,
+                 window_size=-1, window_stride=16):
 
         self.root_path = root_path
         self.list_file = list_file
@@ -38,6 +39,8 @@ class TSNDataSet(data.Dataset):
         self.transform = transform
         self.random_shift = random_shift
         self.test_mode = test_mode
+        self.window_size = window_size
+        self.window_stride = window_stride
 
         if self.modality == 'RGBDiff':
             self.new_length += 1# Diff needs one more image to calculate diff
@@ -80,23 +83,50 @@ class TSNDataSet(data.Dataset):
             offsets = np.zeros((self.num_segments,))
         return offsets + 1
 
-    def _get_test_indices(self, record):
+    def _get_test_indices(self, num_frames):
 
-        tick = (record.num_frames - self.new_length + 1) / float(self.num_segments)
+        tick = (num_frames - self.new_length + 1) / float(self.num_segments)
 
         offsets = np.array([int(tick / 2.0 + tick * x) for x in range(self.num_segments)])
 
         return offsets + 1
 
+    def _get_window_starts(self, num_frames):
+        window_starts = [0]
+        if self.window_size != -1:
+            # tot_windows = num_frames // self.window_size
+            start = 16
+            while (start + self.window_size) <= num_frames: 
+            # for i in range(1, tot_windows):
+                # window_starts.append(self.window_stride * i)
+                window_starts.append(start)
+                start += self.window_stride
+             
+        return window_starts
+        
     def __getitem__(self, index):
         record = self.video_list[index]
 
+        windows = []
         if not self.test_mode:
             segment_indices = self._sample_indices(record) if self.random_shift else self._get_val_indices(record)
+            windows.append(self.get(record, segment_indices))
+        elif self.window_size != -1:
+            window_starts = self._get_window_starts(record.num_frames)
+            # print(('Video {0}\t{1}\t{2}'.format(record.path, record.num_frames, window_starts)))
+            for start_index in window_starts:
+                if start_index == 0 or record.num_frames < self.window_size:
+                    segment_indices = self._get_test_indices(record.num_frames)
+                else:
+                    segment_indices = self._get_test_indices(self.window_size)
+                segment_indices += start_index
+                windows.append(self.get(record, segment_indices))
         else:
-            segment_indices = self._get_test_indices(record)
+            segment_indices = self._get_test_indices(record.num_frames)
+            windows.append(self.get(record, segment_indices))
 
-        return self.get(record, segment_indices)
+        # print(('Window starts {0} and Widnows {1}'.format(record.path, len(windows))))
+        return windows, record.path
 
     def get(self, record, indices):
 
@@ -110,7 +140,7 @@ class TSNDataSet(data.Dataset):
                     p += 1
 
         process_data = self.transform(images)
-        return process_data, record.label
+        return (process_data, record.label)
 
     def __len__(self):
         return len(self.video_list)
