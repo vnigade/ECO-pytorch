@@ -125,7 +125,7 @@ class TSNDataSet(data.Dataset):
             segment_indices = self._get_test_indices(record.num_frames)
             windows.append(self.get(record, segment_indices))
 
-        # print(('Window starts {0} and Widnows {1}'.format(record.path, len(windows))))
+        print(('Window starts {0} and Widnows {1}'.format(record.path, len(windows))))
         return windows, record.path
 
     def get(self, record, indices):

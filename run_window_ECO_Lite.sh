@@ -48,8 +48,7 @@ if [ "x${checkpointIter}" != "x" ]; then
     lastCheckpoint="${subFolder}/${snap_pref}_rgb_epoch_${checkpointIter}_checkpoint.pth.tar"
     echo "Continuing from checkpoint ${lastCheckpoint}"
 
-python3 -u predict_window.py ${dataset_name} RGB ${train_path} ${val_path}  --arch ${netType} --num_segments ${num_segments} --gd 50 --lr ${learning_rate} --num_saturate 5 --epochs 20 -b ${batch_size} -i ${iter_size} -j ${num_workers} --dropout ${dropout} --snapshot_pref ${mainFolder}/${subFolder}/${snap_pref} --consensus_type identity --eval-freq 1 --rgb_prefix ${frame_prefix} --pretrained_parts finetune --no_partialbn  --nesterov "True" --resume ${mainFolder}/${lastCheckpoint} 2>&1 | tee -a ${mainFolder}/${subFolder}/training/log.txt    
-
+python3 -u predict_window.py ${dataset_name} RGB ${train_path} ${val_path}  --arch ${netType} --num_segments ${num_segments} --gd 50 --lr ${learning_rate} --num_saturate 5 --epochs 20 -b ${batch_size} -i ${iter_size} -j ${num_workers} --dropout ${dropout} --snapshot_pref ${mainFolder}/${subFolder}/${snap_pref} --consensus_type identity --eval-freq 1 --rgb_prefix ${frame_prefix} --pretrained_parts finetune --no_partialbn  --nesterov "True" --resume ${mainFolder}/${lastCheckpoint} --print-freq 1000 2>&1 | tee -a ${mainFolder}/${subFolder}/training/log.tx
 else
      echo "Checkpoint is missing"
 fi

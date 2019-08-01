@@ -18,6 +18,8 @@ import torch.utils.model_zoo as model_zoo
 from torch.nn.init import constant_, xavier_uniform_
 from collections import defaultdict
 import json, re
+from torchsummary import summary
+from thop import profile
 
 OUTPUT_DIR="./dump_scores"
 
@@ -66,6 +68,8 @@ def main():
     input_std = model.input_std
 
     model = torch.nn.DataParallel(model, device_ids=args.gpus).cuda()
+    print_model(model)
+    # model = torch.nn.DataParallel(model) # CPU
 
     print("pretrained_parts: ", args.pretrained_parts)
 
@@ -73,6 +77,7 @@ def main():
         if os.path.isfile(args.resume):
             print(("=> loading checkpoint '{}'".format(args.resume)))
             checkpoint = torch.load(args.resume)
+            # checkpoint = torch.load(args.resume, map_location='cpu') # CPU
             # if not checkpoint['lr']:
             if "lr" not in checkpoint.keys():
                 args.lr = input("No 'lr' attribute found in resume model, please input the 'lr' manually: ")
@@ -105,8 +110,8 @@ def main():
         data_length = 5
 
     end = time.time()
-    data_loader = torch.utils.data.DataLoader(
-        TSNDataSet("", args.val_list, num_segments=args.num_segments,
+    # data_loader = torch.utils.data.DataLoader(
+    dataset = TSNDataSet("", args.val_list, num_segments=args.num_segments,
                    new_length=data_length,
                    modality=args.modality,
                    image_tmpl=args.rgb_prefix+rgb_read_format if args.modality in ["RGB", "RGBDiff"] else args.flow_prefix+rgb_read_format,
@@ -121,13 +126,16 @@ def main():
                        normalize,
                    ]),
                    test_mode=True,
-                   window_size=64, window_stride=16),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True,
-        collate_fn=collate_fn)
+                   window_size=64, window_stride=16);
+    data_loader = torch.utils.data.DataLoader(dataset,
+                      batch_size=args.batch_size, shuffle=False,
+                      num_workers=args.workers, pin_memory=True,
+                      collate_fn=collate_fn)
 
-    criterion = torch.nn.CrossEntropyLoss().cuda()
-    predict(data_loader, model, criterion, 0)
+    # criterion = torch.nn.CrossEntropyLoss().cuda()
+    # predict(data_loader, model, criterion, 0)
+    predict(dataset, model, criterion=None, iter=0)
+    # profile_model(model)
     elapsed_time = time.time() - end    
     print("STATS_TOT_WINDOWS={0}, Total prediction time={1}".format(STATS_TOT_WINDOWS, elapsed_time))
     return
@@ -145,7 +153,6 @@ def predict(data_loader, model, criterion, iter, logger=None):
     # switch to evaluate mode
     model.eval()
 
-    end = time.time()
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
@@ -153,16 +160,16 @@ def predict(data_loader, model, criterion, iter, logger=None):
         # discard final batch
         if i == len(data_loader)-1:
             break
-        # print(('Window length {0} {1}'.format(video, len(windows))))
+        print(('Window length {0} {1}'.format(video, len(windows))))
         output_dict = defaultdict(lambda: defaultdict(list))
         for j, (input, target) in enumerate(windows):
             # target = target.cuda(async=True)
             input_var = input 
             target_var = target
 
+            end = time.time()
             # compute output
             output = model(input_var)
-            # print(output.cpu().numpy()[0].tolist())
             output_dict["window_" + str(j)]["rgb_scores"] = output.cpu().numpy().flatten().tolist()
             # loss = criterion(output, target_var)
 
@@ -178,21 +185,22 @@ def predict(data_loader, model, criterion, iter, logger=None):
             end = time.time()
             STATS_TOT_WINDOWS += 1
 
-            # if i % args.print_freq == 0:
-            #    print(('Test: [{0}/{1}]\t'
-            #          'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-            #          'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-            #          'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-            #          'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-            #           i, len(data_loader), batch_time=batch_time, loss=losses,
-            #           top1=top1, top5=top5)))
+            if i % args.print_freq == 0:
+                print(('Test: [{0}/{1}]\t'
+                     'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                     'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                     'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                      i, len(data_loader), batch_time=batch_time, loss=losses,
+                      top1=top1, top5=top5)))
         # write to json file
         video_name = process_video_string(video)
         with open(OUTPUT_DIR + "/" + video_name, 'w') as outfile:
             json.dump(output_dict, outfile)
 
     print(('Testing Results: Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Loss {loss.avg:.5f}'
-          .format(top1=top1, top5=top5, loss=losses)))
+          ' Prediction time {pred_time.avg:.3f}'
+          .format(top1=top1, top5=top5, loss=losses, pred_time=batch_time)))
     
     return top1.avg
 
@@ -238,6 +246,18 @@ def accuracy(output, target, topk=(1,)):
 def collate_fn(batch):
     windows, video = zip(*batch)
     return windows[0], video[0]
+
+def print_model(model):
+    print(model)
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('Total trainable model paramters: {0}'.format(total_params))
+    print("=================Summary==================")
+    summary(model, input_size=(12, 224, 224))
+
+def profile_model(model):
+    input = torch.randn(12, 224, 224)
+    flops, params = profile(model, inputs=(input, ))
+    print("Flops:", flops)
     
 if __name__ == '__main__':
     main()
