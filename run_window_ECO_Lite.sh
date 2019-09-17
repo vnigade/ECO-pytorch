@@ -7,7 +7,8 @@ subFolder="ECO_lite_finetune_UCF101_run1"
 snap_pref="eco_lite_finetune_UCF101"
 
 train_path="data/ucf101_rgb_train_split_1.txt"
-val_path="data/ucf101_rgb_val_split_1.txt"
+# val_path="data/ucf101_rgb_val_split_1.txt" # UCF101 validation list
+val_path="/home/vne500/datasets/THUMOS2014/splits/thumos2014_rgb_val_val.txt" # THUMOS2014 validation list
 
 n2D_model="nll"
 n3D_model="nll"

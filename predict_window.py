@@ -21,7 +21,7 @@ import json, re
 from torchsummary import summary
 from thop import profile
 
-OUTPUT_DIR="./dump_scores"
+OUTPUT_DIR="./dump_scores/THUMOS2014/train"
 
 # Stats global variables
 STATS_TOT_WINDOWS=0
@@ -45,7 +45,7 @@ def main():
 
     if args.dataset == 'ucf101':
         num_class = 101
-        rgb_read_format = "{:05d}.jpg"
+        rgb_read_format = "{:06d}.jpg"
     elif args.dataset == 'hmdb51':
         num_class = 51
         rgb_read_format = "{:05d}.jpg"
