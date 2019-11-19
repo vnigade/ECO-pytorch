@@ -21,10 +21,13 @@ import json, re
 from torchsummary import summary
 from thop import profile
 
-OUTPUT_DIR="./dump_scores/THUMOS2014/train"
+OUTPUT_DIR="./dump_scores/THUMOS2014/window_32/test/"
 
 # Stats global variables
 STATS_TOT_WINDOWS=0
+_WINDOW_SIZE=64
+_WINDOW_STRIDE=32
+_CUDA=False
 
 def main():
     global args
@@ -45,7 +48,8 @@ def main():
 
     if args.dataset == 'ucf101':
         num_class = 101
-        rgb_read_format = "{:06d}.jpg"
+        rgb_read_format = "{:06d}.jpg" # Format for THUMOS14 videos
+        # rgb_read_format = "{:05d}.jpg"
     elif args.dataset == 'hmdb51':
         num_class = 51
         rgb_read_format = "{:05d}.jpg"
@@ -67,17 +71,21 @@ def main():
     input_mean = model.input_mean
     input_std = model.input_std
 
-    model = torch.nn.DataParallel(model, device_ids=args.gpus).cuda()
+    if _CUDA:
+        model = torch.nn.DataParallel(model, device_ids=args.gpus).cuda() # CUDA
     print_model(model)
-    # model = torch.nn.DataParallel(model) # CPU
+    if not _CUDA:
+        model = torch.nn.DataParallel(model) # CPU
 
     print("pretrained_parts: ", args.pretrained_parts)
 
     if args.resume:
         if os.path.isfile(args.resume):
             print(("=> loading checkpoint '{}'".format(args.resume)))
-            checkpoint = torch.load(args.resume)
-            # checkpoint = torch.load(args.resume, map_location='cpu') # CPU
+            if _CUDA:
+                checkpoint = torch.load(args.resume) # CUDA
+            else:
+                checkpoint = torch.load(args.resume, map_location='cpu') # CPU
             # if not checkpoint['lr']:
             if "lr" not in checkpoint.keys():
                 args.lr = input("No 'lr' attribute found in resume model, please input the 'lr' manually: ")
@@ -126,7 +134,7 @@ def main():
                        normalize,
                    ]),
                    test_mode=True,
-                   window_size=64, window_stride=16);
+                   window_size=_WINDOW_SIZE, window_stride=_WINDOW_STRIDE);
     data_loader = torch.utils.data.DataLoader(dataset,
                       batch_size=args.batch_size, shuffle=False,
                       num_workers=args.workers, pin_memory=True,
@@ -252,7 +260,10 @@ def print_model(model):
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('Total trainable model paramters: {0}'.format(total_params))
     print("=================Summary==================")
-    summary(model, input_size=(12, 224, 224))
+    if not _CUDA:
+        summary(model, input_size=(12, 224, 224), device='cpu')
+    else:
+        summary(model, input_size=(12, 224, 224))
 
 def profile_model(model):
     input = torch.randn(12, 224, 224)

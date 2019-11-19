@@ -95,7 +95,7 @@ class TSNDataSet(data.Dataset):
         window_starts = [0]
         if self.window_size != -1:
             # tot_windows = num_frames // self.window_size
-            start = 16
+            start = self.window_stride
             while (start + self.window_size) <= num_frames: 
             # for i in range(1, tot_windows):
                 # window_starts.append(self.window_stride * i)
