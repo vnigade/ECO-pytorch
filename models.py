@@ -4,13 +4,12 @@ from .ops import ConsensusModule, Identity
 # from ops.basic_ops import ConsensusModule, Identity
 from .transforms import *
 from torch.nn.init import xavier_uniform_, constant_
-
 class TSN(nn.Module):
     def __init__(self, num_class, num_segments, pretrained_parts, modality,
                  base_model='resnet101', new_length=None,
                  consensus_type='avg', before_softmax=True,
                  dropout=0.8,
-                 crop_num=1, partial_bn=True):
+                 crop_num=1, partial_bn=True, model_path=None):
         super(TSN, self).__init__()
         self.modality = modality
         self.num_segments = num_segments
@@ -21,6 +20,7 @@ class TSN(nn.Module):
         self.crop_num = crop_num
         self.consensus_type = consensus_type
         self.base_model_name = base_model
+        self.model_path = model_path
         if not before_softmax and consensus_type != 'avg':
             raise ValueError("Only avg consensus can be used after Softmax")
 
@@ -124,8 +124,8 @@ TSN Configurations:
                 self.input_mean = self.input_mean * (1 + self.new_length)
 
         elif base_model == 'ECO':
-            import tf_model_zoo
-            self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments, pretrained_parts=self.pretrained_parts)
+            from . import tf_model_zoo
+            self.base_model = getattr(tf_model_zoo, base_model)(num_segments=self.num_segments, pretrained_parts=self.pretrained_parts, model_path=self.model_path)
             self.base_model.last_layer_name = 'fc_final'
             self.input_size = 224
             self.input_mean = [104, 117, 128]
