@@ -1,7 +1,8 @@
 from torch import nn
 
-from ops.basic_ops import ConsensusModule, Identity
-from transforms import *
+from .ops import ConsensusModule, Identity
+# from ops.basic_ops import ConsensusModule, Identity
+from .transforms import *
 from torch.nn.init import xavier_uniform_, constant_
 
 class TSN(nn.Module):
